@@ -78,6 +78,7 @@ gb_hook_run() {
         export GB_TOOLKIT_ROOT="${GB_TOOLKIT_ROOT:-${GREENBLUE_TOOLKIT_ROOT:-}}"
         export GB_ACTIVE_SLOT="${GB_ACTIVE_SLOT:-}"
         export GB_TARGET_SLOT="${GB_TARGET_SLOT:-}"
+        export GB_RUNTIME_ENV_FILE="${GB_RUNTIME_ENV_FILE:-}"
         "$full" "$@"
     )
 }

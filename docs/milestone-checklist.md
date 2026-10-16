@@ -2,7 +2,7 @@
 
 Stack from `main`. One branch + one commit per milestone. Gates: `bash -n` on all `bin/gb`, `lib/*.sh`, `cmd/*.sh`; run `tests/smoke.sh` when present.
 
-Resume from: M1
+Resume from: M3
 
 ## M1 — CLI contract: deploy, revert, contextual `.greenblue`
 
@@ -14,11 +14,11 @@ Resume from: M1
 
 ## M2 — HEV: vault context, strict sync, mount map, runtime.env
 
-- [ ] `GB_HEV_VAULT_ROOT` + run vault CLI with correct working directory and relative config when set.
-- [ ] `GB_HEV_SYNC_STRICT` default `1`; non-strict only via `.greenblue`.
-- [ ] `GB_HEV_MOUNT_MAP` applied before hooks; then `GB_HOOK_HEV_AFTER_RENDER` (optional).
-- [ ] Write gitignored `{GB_ROOT}/.gb/runtime.env` from map (+ hook appends); compose documented to use it.
-- [ ] Gates + checklist update.
+- [x] `GB_HEV_VAULT_ROOT` + run vault CLI with correct working directory and relative config when set.
+- [x] `GB_HEV_SYNC_STRICT` default `1`; non-strict only via `.greenblue`.
+- [x] `GB_HEV_MOUNT_MAP` applied before hooks; then `GB_HOOK_HEV_AFTER_RENDER` (optional).
+- [x] Write gitignored `{GB_ROOT}/.gb/runtime.env` from map (+ hook appends); compose documented to use it.
+- [x] Gates + checklist update.
 
 ## M3 — Deploy/revert pipeline and install flags
 

@@ -101,12 +101,16 @@ gb_config_normalize() {
     : "${GB_HOOK_INSTALL_APP:=}"
     : "${GB_HOOK_AFTER_SLOT_UP:=}"
     : "${GB_HOOK_AFTER_SLOT_HEALTH:=}"
+    : "${GB_HOOK_HEV_AFTER_RENDER:=}"
 
     : "${GB_HEV_CONFIG:=}"
     : "${GB_HEV_BIN:=}"
     : "${GB_HEV_REPO:=}"
     : "${GB_HEV_PROFILES:=}"
     : "${GB_HEV_RENDER_ROOT:=}"
+    : "${GB_HEV_VAULT_ROOT:=}"
+    : "${GB_HEV_SYNC_STRICT:=1}"
+    : "${GB_HEV_MOUNT_MAP:=}"
     : "${GB_HEV_RENDER_ON_DEV_UP:=0}"
     : "${GB_HEV_RENDER_ON_DEPLOY:=1}"
     : "${GB_HEV_SYNC_ON_DEV_UP:=0}"
@@ -115,6 +119,12 @@ gb_config_normalize() {
     if [[ -n "${GB_HEV_CONFIG_CLI:-}" ]]; then
         GB_HEV_CONFIG="$GB_HEV_CONFIG_CLI"
     fi
+
+    if [[ -z "$GB_HEV_VAULT_ROOT" && -n "$GB_HEV_CONFIG" ]]; then
+        GB_HEV_VAULT_ROOT="$(dirname "$GB_HEV_CONFIG")"
+    fi
+
+    GB_RUNTIME_ENV_FILE="${GB_RUNTIME_ENV_FILE:-${GB_ROOT}/.gb/runtime.env}"
 
     if [[ -z "$GB_PROJECT_NAME" ]]; then
         gb_die "GB_PROJECT_NAME (or PROJECT_NAME) must be set in .greenblue"

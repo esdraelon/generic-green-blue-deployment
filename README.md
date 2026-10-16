@@ -49,9 +49,10 @@ gb revert
 | Nginx | `GB_NGINX_STRATEGY`: `site-file` or `color-symlink` |
 | State | `GB_STATE_DIR` → `active` / `previous` slot files |
 | App install | `GB_APP_INSTALL=composer-phinx` or `none`; override with `GB_HOOK_INSTALL_APP` |
-| Hooks | `GB_HOOK_PRE_DEPLOY`, `GB_HOOK_AFTER_SLOT_UP`, `GB_HOOK_AFTER_SLOT_HEALTH`, `GB_HOOK_POST_DEPLOY` (prod deploy), `GB_HOOK_POST_COMMAND` (dev deploy) |
+| Hooks | `GB_HOOK_PRE_DEPLOY`, `GB_HOOK_AFTER_SLOT_UP`, `GB_HOOK_AFTER_SLOT_HEALTH`, `GB_HOOK_HEV_AFTER_RENDER`, `GB_HOOK_POST_DEPLOY` (prod deploy), `GB_HOOK_POST_COMMAND` (dev deploy) |
 | Git | `GB_GIT_BRANCH`, `GB_INSTALL_SKIP_GIT_PULL`, pin with `GB_INSTALL_GIT_REF` |
-| host-env-vault | `GB_HEV_PROFILES`, `GB_HEV_RENDER_ROOT`, optional default `GB_HEV_CONFIG`, sync/render flags |
+| host-env-vault | `GB_HEV_PROFILES`, `GB_HEV_RENDER_ROOT`, `GB_HEV_VAULT_ROOT`, `GB_HEV_CONFIG`, `GB_HEV_SYNC_STRICT`, `GB_HEV_MOUNT_MAP`, sync/render flags |
+| Deploy wiring | `GB_RUNTIME_ENV_FILE` (default `{GB_ROOT}/.gb/runtime.env`, gitignored in the app repo) |
 
 Shaped templates (copy to your app as `.greenblue`):
 
@@ -87,8 +88,13 @@ gb --hev-config /etc/host-env-vault/config.toml /path/to/my-app deploy
 
 You may also set `GB_HEV_CONFIG` in `.greenblue` as a project default; `--hev-config` overrides it.
 
+- **`GB_HEV_VAULT_ROOT`**: directory used as the working directory when invoking `host-env-vault` (`cd` into the vault tree). Defaults to the directory containing `GB_HEV_CONFIG` when unset. When the config file lives under that root, `--config` is passed as a path relative to the vault root.
 - List profiles in `GB_HEV_PROFILES` (must match catalog profile names).
 - After `render`, inject secrets appear as `secrets.env` under `<profile>/current/`; mount that directory in compose (see host-env-vault docs).
+- **`GB_HEV_SYNC_STRICT`**: defaults to `1`. Sync/render failures abort the deploy; set `GB_HEV_SYNC_STRICT=0` in `.greenblue` to log and continue.
+- **`GB_HEV_MOUNT_MAP`**: space-separated entries mapping rendered profiles to host env vars (and optional compose mount hints). Each entry is `profile:ENV_VAR` or `profile:ENV_VAR:container_path`. After render, the toolkit sets `ENV_VAR` to the absolute host path of `{render_root}/{profile}/current` and writes the same `KEY=value` lines to `{GB_ROOT}/.gb/runtime.env`. Mount map runs before the optional `GB_HOOK_HEV_AFTER_RENDER` hook.
+- **`GB_RUNTIME_ENV_FILE`**: deployment wiring only (not application `.env`). Hooks may append lines, e.g. `echo 'EXTRA=value' >> "$GB_RUNTIME_ENV_FILE"`.
+- `docker compose` is invoked with `--env-file` pointing at `GB_RUNTIME_ENV_FILE` when that file exists, so compose can reference mount-map variables.
 - `GB_HEV_SYNC_SOURCE=local` for offline/dev sync; omit on hosts using SSM.
 - Optional `GB_HEV_BIN` or `GB_HEV_REPO` in `.greenblue` if the binary is not on `PATH`.
 - HEV sync/render runs as part of `deploy` when enabled in `.greenblue` (`GB_HEV_*_ON_DEV_UP`, `GB_HEV_*_ON_DEPLOY`).
