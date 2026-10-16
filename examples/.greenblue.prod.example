@@ -1,4 +1,6 @@
-# Single web stack, site-file nginx. Copy to your app repo as .greenblue and edit.
+# Production blue-green deploy. Copy to your app repo root as .greenblue (do not commit).
+
+GB_MODE="prod"
 
 GB_PROJECT_NAME="my-app"
 GB_CONTAINER_APP_DIR="/var/www/my-app"
@@ -10,6 +12,9 @@ GB_BLUE_PORT="8080"
 GB_GREEN_PORT="8081"
 
 GB_WEB_COMPOSE_PROJECT="my-app"
+GB_WEB_COMPOSE_BASE="docker/compose.prod.yml"
+GB_WEB_COMPOSE_SLOT="docker/compose.%slot%.yml"
+GB_WEB_COMPOSE_DEV="docker/compose.dev.yml"
 GB_STATE_DIR="/var/lib/my-app-greenblue"
 
 GB_NGINX_STRATEGY="site-file"
@@ -23,3 +28,6 @@ GB_DEPLOY_STACKS="web"
 # GB_HEV_CONFIG="/path/to/host-env-vault/host-config.toml"
 # GB_HEV_PROFILES="app-web"
 # GB_HEV_RENDER_ON_DEPLOY="1"
+# GB_HEV_SYNC_STRICT="1"
+# GB_HEV_MOUNT_MAP="app-web:HEV_APP_WEB_SECRETS"
+# Optional: GB_HOOK_HEV_AFTER_RENDER="host/gb-hev-after-render.sh"

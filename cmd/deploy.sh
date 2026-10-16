@@ -45,12 +45,20 @@ gb_deploy_blue_green() {
 }
 
 gb_cmd_deploy() {
+    local mode
+    mode="$(gb_effective_mode)"
+    if [[ "$mode" == "dev" ]]; then
+        gb_cmd_dev_up
+        return
+    fi
+
     gb_require_cmd docker
     gb_require_cmd curl
 
     gb_hook_run "$GB_HOOK_PRE_DEPLOY" deploy
     gb_hev_maybe_sync deploy
     gb_hev_maybe_render deploy
+    gb_apply_pinned_deploy_flags
 
     if [[ "$GB_INSTALL_SKIP_GIT_PULL" != "1" ]]; then
         gb_require_cmd git

@@ -36,6 +36,20 @@ gb_read_active_slot() {
     echo ""
 }
 
+gb_read_previous_slot() {
+    if [[ ! -f "$GB_PREVIOUS_STATE_FILE" ]]; then
+        echo ""
+        return
+    fi
+    local slot
+    slot="$(tr -d '[:space:]' < "$GB_PREVIOUS_STATE_FILE")"
+    if [[ "$slot" == "blue" || "$slot" == "green" ]]; then
+        echo "$slot"
+        return
+    fi
+    echo ""
+}
+
 gb_write_active_slot() {
     local slot="$1"
     mkdir -p "$(dirname "$GB_STATE_FILE")"

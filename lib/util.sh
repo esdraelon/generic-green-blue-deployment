@@ -71,5 +71,14 @@ gb_hook_run() {
     if [[ ! -x "$full" ]]; then
         gb_die "hook is set but not executable: ${hook_path}"
     fi
-    (cd "$GB_ROOT" && GB_ACTIVE_SLOT="${GB_ACTIVE_SLOT:-}" GB_TARGET_SLOT="${GB_TARGET_SLOT:-}" "$full" "$@")
+    (
+        cd "$GB_ROOT"
+        export GB_ROOT="${GB_ROOT:-}"
+        export GB_CMD="${GB_CMD:-}"
+        export GB_TOOLKIT_ROOT="${GB_TOOLKIT_ROOT:-${GREENBLUE_TOOLKIT_ROOT:-}}"
+        export GB_ACTIVE_SLOT="${GB_ACTIVE_SLOT:-}"
+        export GB_TARGET_SLOT="${GB_TARGET_SLOT:-}"
+        export GB_RUNTIME_ENV_FILE="${GB_RUNTIME_ENV_FILE:-}"
+        "$full" "$@"
+    )
 }
