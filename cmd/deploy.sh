@@ -45,6 +45,13 @@ gb_deploy_blue_green() {
 }
 
 gb_cmd_deploy() {
+    local mode
+    mode="$(gb_effective_mode)"
+    if [[ "$mode" == "dev" ]]; then
+        gb_cmd_dev_up
+        return
+    fi
+
     gb_require_cmd docker
     gb_require_cmd curl
 

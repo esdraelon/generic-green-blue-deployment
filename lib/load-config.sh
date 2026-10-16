@@ -4,16 +4,33 @@
 gb_load_config() {
     local project_root="$1"
     GB_ROOT="$(gb_abs_path "$project_root")"
-    GB_CONFIG_FILE="${GB_CONFIG_FILE:-${GB_ROOT}/.greenblue}"
 
-    if [[ ! -f "$GB_CONFIG_FILE" ]]; then
-        gb_die "missing config: ${GB_CONFIG_FILE} (copy a template from examples/ in this toolkit)"
+    if [[ ! -f "${GB_ROOT}/.greenblue" ]]; then
+        gb_die "missing config: ${GB_ROOT}/.greenblue (copy examples/.greenblue.dev.example or examples/.greenblue.prod.example)"
     fi
 
     # shellcheck disable=SC1090
-    source "$GB_CONFIG_FILE"
+    source "${GB_ROOT}/.greenblue"
 
     gb_config_normalize
+}
+
+gb_effective_mode() {
+    case "${GB_MODE:-}" in
+        dev | prod)
+            echo "$GB_MODE"
+            ;;
+        "")
+            if gb_uses_blue_green; then
+                echo "prod"
+            else
+                echo "dev"
+            fi
+            ;;
+        *)
+            gb_die "GB_MODE must be dev or prod (got: ${GB_MODE})"
+            ;;
+    esac
 }
 
 gb_config_normalize() {
@@ -77,8 +94,10 @@ gb_config_normalize() {
     : "${GB_DEPLOY_STACKS:=sessions web worker}"
 
     : "${GB_APP_INSTALL:=composer-phinx}"
+    : "${GB_MODE:=}"
     : "${GB_HOOK_PRE_DEPLOY:=}"
     : "${GB_HOOK_POST_DEPLOY:=}"
+    : "${GB_HOOK_POST_COMMAND:=}"
     : "${GB_HOOK_INSTALL_APP:=}"
     : "${GB_HOOK_AFTER_SLOT_UP:=}"
     : "${GB_HOOK_AFTER_SLOT_HEALTH:=}"
@@ -115,5 +134,6 @@ GB_STATE_FILE=${GB_STATE_FILE}
 GB_NGINX_STRATEGY=${GB_NGINX_STRATEGY}
 GB_HEV_CONFIG=${GB_HEV_CONFIG:-<unset>}
 GB_HEV_PROFILES=${GB_HEV_PROFILES:-<none>}
+GB_MODE=$(gb_effective_mode)
 EOF
 }

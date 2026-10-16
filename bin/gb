@@ -3,6 +3,7 @@ set -euo pipefail
 
 GREENBLUE_TOOLKIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export GREENBLUE_TOOLKIT_ROOT
+export GB_TOOLKIT_ROOT="$GREENBLUE_TOOLKIT_ROOT"
 
 # shellcheck source=../lib/util.sh
 source "${GREENBLUE_TOOLKIT_ROOT}/lib/util.sh"
@@ -26,6 +27,8 @@ source "${GREENBLUE_TOOLKIT_ROOT}/lib/hev.sh"
 source "${GREENBLUE_TOOLKIT_ROOT}/cmd/dev-up.sh"
 # shellcheck source=../cmd/deploy.sh
 source "${GREENBLUE_TOOLKIT_ROOT}/cmd/deploy.sh"
+# shellcheck source=../cmd/revert.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/cmd/revert.sh"
 # shellcheck source=../cmd/status.sh
 source "${GREENBLUE_TOOLKIT_ROOT}/cmd/status.sh"
 # shellcheck source=../cmd/hev.sh
@@ -42,22 +45,26 @@ Options:
   -h, --help           Show this help
 
 Commands:
-  dev-up          Dev stack with source bind-mounted (see GB_DEV_STACKS)
-  deploy          Production blue-green deploy (git pull, build, health, nginx)
+  deploy          Start dev stack or run prod blue-green deploy (see GB_MODE in .greenblue)
+  revert          Switch host nginx back to the previous slot (prod only)
   status          Show active/previous slot from state file
-  hev-sync        Run host-env-vault sync (local or SSM per config)
-  hev-render      Render all GB_HEV_PROFILES, or name profiles explicitly
   config          Print resolved settings (debug)
 
 Environment:
   GB_PROJECT_ROOT      Default application repo when path is omitted
-  GB_INSTALL_GIT_REF   Pin deploy to a commit SHA
+  GB_INSTALL_GIT_REF   Pin prod deploy to a commit SHA
 
 Examples:
-  gb /path/to/my-app dev-up
-  gb --hev-config /path/to/vault/host-config.toml /path/to/my-app deploy
-  gb --hev-config /path/to/vault/host-config.toml /path/to/my-app hev-render app-web
+  gb /var/www/project.example.com deploy
+  gb /var/www/project.example.com revert
+  gb --hev-config /path/to/vault/host-config.toml /var/www/project.example.com deploy
 EOF
+}
+
+gb_deprecate_command() {
+    local old="$1"
+    local new="$2"
+    echo "gb: warning: '${old}' is deprecated; use '${new}' instead" >&2
 }
 
 gb_main() {
@@ -74,6 +81,7 @@ gb_main() {
                 shift
                 toolkit="$(gb_abs_path "${1:?}")"
                 GREENBLUE_TOOLKIT_ROOT="$toolkit"
+                GB_TOOLKIT_ROOT="$toolkit"
                 shift
                 ;;
             --hev-config)
@@ -121,26 +129,47 @@ gb_main() {
     gb_load_config "$project"
 
     case "$cmd" in
-        dev-up)
-            gb_cmd_dev_up "$@"
-            ;;
-        deploy | install)
+        deploy)
+            export GB_CMD=deploy
             if [[ $# -eq 1 ]] && [[ "$1" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
                 GB_INSTALL_GIT_REF="$1"
             fi
             gb_cmd_deploy "$@"
             ;;
+        revert)
+            export GB_CMD=revert
+            gb_cmd_revert "$@"
+            ;;
         status)
+            export GB_CMD=status
             gb_cmd_status "$@"
             ;;
+        config)
+            export GB_CMD=config
+            gb_config_show
+            ;;
+        dev-up)
+            gb_deprecate_command dev-up deploy
+            export GB_CMD=deploy
+            gb_cmd_deploy "$@"
+            ;;
+        install)
+            gb_deprecate_command install deploy
+            export GB_CMD=deploy
+            if [[ $# -eq 1 ]] && [[ "$1" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+                GB_INSTALL_GIT_REF="$1"
+            fi
+            gb_cmd_deploy "$@"
+            ;;
         hev-sync)
+            gb_deprecate_command hev-sync "deploy (HEV runs inside deploy when enabled in .greenblue)"
+            export GB_CMD=hev-sync
             gb_cmd_hev_sync "$@"
             ;;
         hev-render)
+            gb_deprecate_command hev-render "deploy (HEV runs inside deploy when enabled in .greenblue)"
+            export GB_CMD=hev-render
             gb_cmd_hev_render "$@"
-            ;;
-        config)
-            gb_config_show
             ;;
         *)
             gb_die "unknown command: ${cmd}"

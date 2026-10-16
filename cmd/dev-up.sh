@@ -29,6 +29,6 @@ gb_cmd_dev_up() {
         fi
     fi
 
-    gb_hook_run "$GB_HOOK_POST_DEPLOY" dev-up
+    gb_hook_run "$GB_HOOK_POST_COMMAND" dev
     gb_info "Dev stack is up."
 }

@@ -1,6 +1,6 @@
 # generic-green-blue-deployment
 
-Reusable deployment primitives for containerized web apps: **dev** (bind-mounted source) and **production blue-green** (code baked into the image, host nginx reverse proxy), driven by a per-repo `.greenblue` file.
+Reusable deployment primitives for containerized web apps: **dev** (bind-mounted source) and **production blue-green** (code baked into the image, host nginx reverse proxy), driven by a per-repo `.greenblue` file at the application root (like `.env` — **not** committed to git).
 
 Check this repository out once, add `bin/gb` to your `PATH`, and point it at any project that provides `.greenblue`, Docker compose overlays, and (optionally) host-env-vault profiles.
 
@@ -9,29 +9,39 @@ Check this repository out once, add `bin/gb` to your `PATH`, and point it at any
 ```bash
 export PATH="/path/to/generic-green-blue-deployment/bin:$PATH"
 
-cp /path/to/generic-green-blue-deployment/examples/minimal.greenblue \
+cp /path/to/generic-green-blue-deployment/examples/.greenblue.dev.example \
    /path/to/my-app/.greenblue
 # edit .greenblue for your compose paths, ports, and names
 
-gb /path/to/my-app dev-up
-gb --hev-config /path/to/vault/host-config.toml /path/to/my-app deploy
+gb /path/to/my-app deploy
 gb /path/to/my-app status
+```
+
+Production:
+
+```bash
+cp /path/to/generic-green-blue-deployment/examples/.greenblue.prod.example \
+   /path/to/my-app/.greenblue
+
+gb --hev-config /path/to/vault/host-config.toml /path/to/my-app deploy
+gb /path/to/my-app revert
 ```
 
 With a default project directory:
 
 ```bash
 export GB_PROJECT_ROOT=/path/to/my-app
-gb dev-up
-gb --hev-config /path/to/vault/host-config.toml deploy
+gb deploy
+gb revert
 ```
 
 ## `.greenblue` contract
 
-`.greenblue` is a **bash snippet** at the application repository root. It is sourced by `gb`; use `GB_*` variables (shorter legacy names from older per-app install scripts still work — see `lib/load-config.sh`).
+`.greenblue` is a **bash snippet** at `{project-root}/.greenblue` only. It is sourced by `gb`; use `GB_*` variables (shorter legacy names from older per-app install scripts still work — see `lib/load-config.sh`).
 
 | Area | Key variables |
 | --- | --- |
+| Mode | `GB_MODE=dev` or `GB_MODE=prod` (if unset: prod when `GB_WEB_COMPOSE_BASE` exists, else dev) |
 | Identity | `GB_PROJECT_NAME`, `GB_CONTAINER_APP_DIR`, `GB_COMPOSE_SERVICE` or `GB_COMPOSE_SERVICE_PATTERN` |
 | Slots | `GB_BLUE_*` / `GB_GREEN_*` containers and ports, `GB_LEGACY_CONTAINER` for first bootstrap |
 | Compose | `GB_WEB_COMPOSE_BASE`, `GB_WEB_COMPOSE_SLOT` (`%slot%`), `GB_WEB_COMPOSE_DEV`, stack lists `GB_DEV_STACKS`, `GB_DEPLOY_STACKS` |
@@ -39,24 +49,29 @@ gb --hev-config /path/to/vault/host-config.toml deploy
 | Nginx | `GB_NGINX_STRATEGY`: `site-file` or `color-symlink` |
 | State | `GB_STATE_DIR` → `active` / `previous` slot files |
 | App install | `GB_APP_INSTALL=composer-phinx` or `none`; override with `GB_HOOK_INSTALL_APP` |
-| Hooks | `GB_HOOK_PRE_DEPLOY`, `GB_HOOK_AFTER_SLOT_UP`, `GB_HOOK_AFTER_SLOT_HEALTH`, `GB_HOOK_POST_DEPLOY` |
+| Hooks | `GB_HOOK_PRE_DEPLOY`, `GB_HOOK_AFTER_SLOT_UP`, `GB_HOOK_AFTER_SLOT_HEALTH`, `GB_HOOK_POST_DEPLOY` (prod deploy), `GB_HOOK_POST_COMMAND` (dev deploy) |
 | Git | `GB_GIT_BRANCH`, `GB_INSTALL_SKIP_GIT_PULL`, pin with `GB_INSTALL_GIT_REF` |
 | host-env-vault | `GB_HEV_PROFILES`, `GB_HEV_RENDER_ROOT`, optional default `GB_HEV_CONFIG`, sync/render flags |
 
-Templates live under `examples/` (`minimal`, `multi-stack`, `nginx-color-symlink`).
+Shaped templates (copy to your app as `.greenblue`):
+
+- `examples/.greenblue.dev.example`
+- `examples/.greenblue.prod.example`
+- `examples/.greenblue.prod.multi-stack.example`
+- `examples/.greenblue.prod.nginx-color-symlink.example`
+
+Hooks receive `GB_ROOT`, `GB_CMD`, `GB_TOOLKIT_ROOT`, and slot variables in the environment.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `dev-up` | Start dev stacks (`GB_DEV_STACKS`: e.g. `sessions`, `web`, `worker`). Web uses prod + slot + **dev** overlay so the repo is bind-mounted. |
-| `deploy` | Fetch/pull (unless skipped), optional HEV sync/render, ensure sessions, build **inactive** slot, install app, health-check, switch nginx, update state. |
+| `deploy` | **Dev** (`GB_MODE=dev`): start dev stacks (`GB_DEV_STACKS`). **Prod** (`GB_MODE=prod`): fetch/pull, optional HEV sync/render, blue-green slot deploy, nginx switch. |
+| `revert` | Prod only: point host nginx at the **previous** slot from `GB_STATE_DIR/previous` (containers stay up). |
 | `status` | Print active/previous slot from `GB_STATE_DIR`. |
-| `hev-sync` | `host-env-vault sync` using `--hev-config` or `GB_HEV_CONFIG`. |
-| `hev-render` | Render one profile or all in `GB_HEV_PROFILES` to `GB_HEV_RENDER_ROOT/<profile>/current`. |
 | `config` | Dump resolved settings (debug). |
 
-Pinned rollback:
+Pinned prod deploy:
 
 ```bash
 GB_INSTALL_GIT_REF=9f3c1ab gb --hev-config /path/to/vault/host-config.toml /path/to/my-app deploy
@@ -67,8 +82,7 @@ GB_INSTALL_GIT_REF=9f3c1ab gb --hev-config /path/to/vault/host-config.toml /path
 Pass the vault TOML on the command line (recommended):
 
 ```bash
-gb --hev-config /etc/host-env-vault/config.toml /path/to/my-app hev-sync
-gb --hev-config /path/to/dev-shared/host-config.toml /path/to/my-app hev-render app-web
+gb --hev-config /etc/host-env-vault/config.toml /path/to/my-app deploy
 ```
 
 You may also set `GB_HEV_CONFIG` in `.greenblue` as a project default; `--hev-config` overrides it.
@@ -77,6 +91,7 @@ You may also set `GB_HEV_CONFIG` in `.greenblue` as a project default; `--hev-co
 - After `render`, inject secrets appear as `secrets.env` under `<profile>/current/`; mount that directory in compose (see host-env-vault docs).
 - `GB_HEV_SYNC_SOURCE=local` for offline/dev sync; omit on hosts using SSM.
 - Optional `GB_HEV_BIN` or `GB_HEV_REPO` in `.greenblue` if the binary is not on `PATH`.
+- HEV sync/render runs as part of `deploy` when enabled in `.greenblue` (`GB_HEV_*_ON_DEV_UP`, `GB_HEV_*_ON_DEPLOY`).
 
 ## Production deploy flow
 
@@ -87,8 +102,9 @@ Build the **inactive** slot, run the configured install step (default: composer 
 ```text
 bin/gb              CLI entry
 lib/                Config, compose, slots, nginx, git, health, hev
-cmd/                dev-up, deploy, status, hev
-examples/           Sample .greenblue files and hooks
+cmd/                deploy, revert, status, dev-up (internal), hev (internal)
+examples/           Sample .greenblue templates and hooks
+tests/smoke.sh      Minimal CLI smoke test
 ```
 
 ## Requirements

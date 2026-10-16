@@ -1,4 +1,7 @@
 # Host nginx uses sites-available/<color> symlinked to sites-enabled/default.
+# Copy to your app repo root as .greenblue (do not commit).
+
+GB_MODE="prod"
 
 GB_PROJECT_NAME="my-app"
 GB_CONTAINER_APP_DIR="/var/www/my-app"
