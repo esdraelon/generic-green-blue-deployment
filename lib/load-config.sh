@@ -7,7 +7,7 @@ gb_load_config() {
     GB_CONFIG_FILE="${GB_CONFIG_FILE:-${GB_ROOT}/.greenblue}"
 
     if [[ ! -f "$GB_CONFIG_FILE" ]]; then
-        gb_die "missing config: ${GB_CONFIG_FILE} (create from examples/ in generic-green-blue-deployment)"
+        gb_die "missing config: ${GB_CONFIG_FILE} (copy a template from examples/ in this toolkit)"
     fi
 
     # shellcheck disable=SC1090
@@ -17,7 +17,7 @@ gb_load_config() {
 }
 
 gb_config_normalize() {
-    # Legacy names used by per-app install.sh / dev-up.sh
+    # Optional legacy variable aliases (see README)
     : "${GB_PROJECT_NAME:=${PROJECT_NAME:-}}"
     : "${GB_WEB_USER:=${WEB_USER:-www-data}}"
     : "${GB_WEB_GROUP:=${WEB_GROUP:-www-data}}"
@@ -83,12 +83,19 @@ gb_config_normalize() {
     : "${GB_HOOK_AFTER_SLOT_UP:=}"
     : "${GB_HOOK_AFTER_SLOT_HEALTH:=}"
 
+    : "${GB_HEV_CONFIG:=}"
+    : "${GB_HEV_BIN:=}"
+    : "${GB_HEV_REPO:=}"
     : "${GB_HEV_PROFILES:=}"
     : "${GB_HEV_RENDER_ROOT:=}"
     : "${GB_HEV_RENDER_ON_DEV_UP:=0}"
     : "${GB_HEV_RENDER_ON_DEPLOY:=1}"
     : "${GB_HEV_SYNC_ON_DEV_UP:=0}"
     : "${GB_HEV_SYNC_ON_DEPLOY:=0}"
+
+    if [[ -n "${GB_HEV_CONFIG_CLI:-}" ]]; then
+        GB_HEV_CONFIG="$GB_HEV_CONFIG_CLI"
+    fi
 
     if [[ -z "$GB_PROJECT_NAME" ]]; then
         gb_die "GB_PROJECT_NAME (or PROJECT_NAME) must be set in .greenblue"
@@ -106,6 +113,7 @@ GB_WEB_COMPOSE_PROJECT=${GB_WEB_COMPOSE_PROJECT}
 GB_BLUE_PORT=${GB_BLUE_PORT} GB_GREEN_PORT=${GB_GREEN_PORT}
 GB_STATE_FILE=${GB_STATE_FILE}
 GB_NGINX_STRATEGY=${GB_NGINX_STRATEGY}
+GB_HEV_CONFIG=${GB_HEV_CONFIG:-<unset>}
 GB_HEV_PROFILES=${GB_HEV_PROFILES:-<none>}
 EOF
 }

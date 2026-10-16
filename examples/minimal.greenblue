@@ -1,0 +1,25 @@
+# Single web stack, site-file nginx. Copy to your app repo as .greenblue and edit.
+
+GB_PROJECT_NAME="my-app"
+GB_CONTAINER_APP_DIR="/var/www/my-app"
+GB_COMPOSE_SERVICE="web"
+
+GB_BLUE_CONTAINER="my-app-blue"
+GB_GREEN_CONTAINER="my-app-green"
+GB_BLUE_PORT="8080"
+GB_GREEN_PORT="8081"
+
+GB_WEB_COMPOSE_PROJECT="my-app"
+GB_STATE_DIR="/var/lib/my-app-greenblue"
+
+GB_NGINX_STRATEGY="site-file"
+GB_NGINX_SITE_NAME="my-app.example.com"
+GB_NGINX_TEMPLATE="host/nginx.%slot%.conf"
+
+GB_DEV_STACKS="web"
+GB_DEPLOY_STACKS="web"
+
+# Optional: default vault config (override with: gb --hev-config /other/path.toml ...)
+# GB_HEV_CONFIG="/path/to/host-env-vault/host-config.toml"
+# GB_HEV_PROFILES="app-web"
+# GB_HEV_RENDER_ON_DEPLOY="1"

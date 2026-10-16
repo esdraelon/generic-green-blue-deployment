@@ -11,11 +11,11 @@ gb_activate_nginx_slot() {
         site-file)
             gb_nginx_activate_site_file "$slot"
             ;;
-        ork3-color-symlink)
-            gb_nginx_activate_ork3_symlink "$slot"
+        color-symlink)
+            gb_nginx_activate_color_symlink "$slot"
             ;;
         *)
-            gb_die "unknown GB_NGINX_STRATEGY: ${GB_NGINX_STRATEGY}"
+            gb_die "unknown GB_NGINX_STRATEGY: ${GB_NGINX_STRATEGY} (use site-file or color-symlink)"
             ;;
     esac
 }
@@ -40,10 +40,10 @@ gb_nginx_activate_site_file() {
     fi
 }
 
-gb_nginx_activate_ork3_symlink() {
+gb_nginx_activate_color_symlink() {
     local slot="$1"
     local available="${GB_NGINX_SITES_AVAILABLE_DIR}/${slot}"
-    gb_info "ORK3-style nginx switch to ${slot} (port $(gb_slot_port "$slot"))..."
+    gb_info "Switching nginx color symlink to ${slot} (port $(gb_slot_port "$slot"))..."
     gb_run_priv rm -f "$GB_NGINX_SITES_ENABLED_DEFAULT"
     gb_run_priv ln -s "$available" "$GB_NGINX_SITES_ENABLED_DEFAULT"
     if command -v systemctl >/dev/null 2>&1; then

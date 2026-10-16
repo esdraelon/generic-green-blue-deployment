@@ -33,7 +33,13 @@ source "${GREENBLUE_TOOLKIT_ROOT}/cmd/hev.sh"
 
 gb_usage() {
     cat <<EOF
-Usage: gb [--toolkit PATH] <project-root> <command> [args...]
+Usage: gb [options] <project-root> <command> [args...]
+       gb [options] <command> [args...]     when GB_PROJECT_ROOT is set
+
+Options:
+  --toolkit PATH       Path to this toolkit (default: install location)
+  --hev-config PATH    host-env-vault config.toml (overrides GB_HEV_CONFIG in .greenblue)
+  -h, --help           Show this help
 
 Commands:
   dev-up          Dev stack with source bind-mounted (see GB_DEV_STACKS)
@@ -44,20 +50,20 @@ Commands:
   config          Print resolved settings (debug)
 
 Environment:
-  GB_PROJECT_ROOT   Default project path if omitted before command
-  GB_INSTALL_GIT_REF Pin deploy to a commit SHA (also: gb deploy <sha> is not supported — use env)
-  HOST_ENV_VAULT_CONFIG  host-env-vault TOML (dev-shared or /etc)
+  GB_PROJECT_ROOT      Default application repo when path is omitted
+  GB_INSTALL_GIT_REF   Pin deploy to a commit SHA
 
 Examples:
-  gb /path/to/amtgard-denarius dev-up
-  gb /path/to/amtgard-denarius deploy
-  export HOST_ENV_VAULT_CONFIG=/path/to/host-env-vault/dev-shared/host-config.toml
-  gb /path/to/amtgard-denarius hev-render denarius-web
+  gb /path/to/my-app dev-up
+  gb --hev-config /path/to/vault/host-config.toml /path/to/my-app deploy
+  gb --hev-config /path/to/vault/host-config.toml /path/to/my-app hev-render app-web
 EOF
 }
 
 gb_main() {
     local toolkit="$GREENBLUE_TOOLKIT_ROOT"
+    GB_HEV_CONFIG_CLI=""
+
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
@@ -69,6 +75,18 @@ gb_main() {
                 toolkit="$(gb_abs_path "${1:?}")"
                 GREENBLUE_TOOLKIT_ROOT="$toolkit"
                 shift
+                ;;
+            --hev-config)
+                shift
+                GB_HEV_CONFIG_CLI="$(gb_abs_path "${1:?}")"
+                shift
+                ;;
+            --)
+                shift
+                break
+                ;;
+            -*)
+                gb_die "unknown option: $1"
                 ;;
             *)
                 break
