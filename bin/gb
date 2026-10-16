@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GREENBLUE_TOOLKIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export GREENBLUE_TOOLKIT_ROOT
+
+# shellcheck source=../lib/util.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/util.sh"
+# shellcheck source=../lib/load-config.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/load-config.sh"
+# shellcheck source=../lib/compose.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/compose.sh"
+# shellcheck source=../lib/slots.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/slots.sh"
+# shellcheck source=../lib/nginx.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/nginx.sh"
+# shellcheck source=../lib/health.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/health.sh"
+# shellcheck source=../lib/git-deploy.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/git-deploy.sh"
+# shellcheck source=../lib/install-app.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/install-app.sh"
+# shellcheck source=../lib/hev.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/lib/hev.sh"
+# shellcheck source=../cmd/dev-up.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/cmd/dev-up.sh"
+# shellcheck source=../cmd/deploy.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/cmd/deploy.sh"
+# shellcheck source=../cmd/status.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/cmd/status.sh"
+# shellcheck source=../cmd/hev.sh
+source "${GREENBLUE_TOOLKIT_ROOT}/cmd/hev.sh"
+
+gb_usage() {
+    cat <<EOF
+Usage: gb [--toolkit PATH] <project-root> <command> [args...]
+
+Commands:
+  dev-up          Dev stack with source bind-mounted (see GB_DEV_STACKS)
+  deploy          Production blue-green deploy (git pull, build, health, nginx)
+  status          Show active/previous slot from state file
+  hev-sync        Run host-env-vault sync (local or SSM per config)
+  hev-render      Render all GB_HEV_PROFILES, or name profiles explicitly
+  config          Print resolved settings (debug)
+
+Environment:
+  GB_PROJECT_ROOT   Default project path if omitted before command
+  GB_INSTALL_GIT_REF Pin deploy to a commit SHA (also: gb deploy <sha> is not supported — use env)
+  HOST_ENV_VAULT_CONFIG  host-env-vault TOML (dev-shared or /etc)
+
+Examples:
+  gb /path/to/amtgard-denarius dev-up
+  gb /path/to/amtgard-denarius deploy
+  export HOST_ENV_VAULT_CONFIG=/path/to/host-env-vault/dev-shared/host-config.toml
+  gb /path/to/amtgard-denarius hev-render denarius-web
+EOF
+}
+
+gb_main() {
+    local toolkit="$GREENBLUE_TOOLKIT_ROOT"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h | --help)
+                gb_usage
+                exit 0
+                ;;
+            --toolkit)
+                shift
+                toolkit="$(gb_abs_path "${1:?}")"
+                GREENBLUE_TOOLKIT_ROOT="$toolkit"
+                shift
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    if [[ $# -lt 1 ]]; then
+        gb_usage >&2
+        exit 1
+    fi
+
+    local project cmd
+    if [[ -d "$1" && -f "$1/.greenblue" ]]; then
+        project="$1"
+        shift
+    elif [[ -n "${GB_PROJECT_ROOT:-}" ]]; then
+        project="$GB_PROJECT_ROOT"
+    else
+        gb_usage >&2
+        exit 1
+    fi
+
+    if [[ $# -lt 1 ]]; then
+        gb_usage >&2
+        exit 1
+    fi
+
+    cmd="$1"
+    shift
+
+    gb_load_config "$project"
+
+    case "$cmd" in
+        dev-up)
+            gb_cmd_dev_up "$@"
+            ;;
+        deploy | install)
+            if [[ $# -eq 1 ]] && [[ "$1" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+                GB_INSTALL_GIT_REF="$1"
+            fi
+            gb_cmd_deploy "$@"
+            ;;
+        status)
+            gb_cmd_status "$@"
+            ;;
+        hev-sync)
+            gb_cmd_hev_sync "$@"
+            ;;
+        hev-render)
+            gb_cmd_hev_render "$@"
+            ;;
+        config)
+            gb_config_show
+            ;;
+        *)
+            gb_die "unknown command: ${cmd}"
+            ;;
+    esac
+}
+
+gb_main "$@"

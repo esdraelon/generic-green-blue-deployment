@@ -1,0 +1,35 @@
+# Copy to amtgard-idp/.greenblue
+
+GB_PROJECT_NAME="amtgard-idp"
+GB_CONTAINER_APP_DIR="/var/www/idp.amtgard.com"
+GB_COMPOSE_SERVICE="amtgardidpapp"
+
+GB_LEGACY_CONTAINER="amtgard-idp"
+GB_BLUE_CONTAINER="amtgard-idp-blue"
+GB_GREEN_CONTAINER="amtgard-idp-green"
+GB_BLUE_PORT="37080"
+GB_GREEN_PORT="37081"
+
+GB_WEB_COMPOSE_PROJECT="amtgard-idp"
+GB_SHARED_NETWORK="amtgard-idp-shared"
+
+GB_STATE_DIR="/var/lib/amtgard-idp"
+
+GB_NGINX_STRATEGY="site-file"
+GB_NGINX_SITE_NAME="idp.amtgard.com"
+GB_NGINX_TEMPLATE="host/nginx.%slot%.conf"
+
+GB_DEV_STACKS="sessions web worker"
+GB_DEPLOY_STACKS="sessions web worker"
+
+GB_SESSIONS_COMPOSE_PROJECT="amtgard-idp-sessions"
+GB_WORKER_COMPOSE_PROJECT="amtgard-idp-worker"
+GB_WORKER_CONTAINER="amtgard-idp-jwt-worker"
+
+GB_HOOK_AFTER_SLOT_UP="scripts/gb-after-slot-up.sh"
+
+GB_HEV_PROFILES="idp-http idp-worker"
+GB_HEV_RENDER_ON_DEV_UP="1"
+GB_HEV_RENDER_ON_DEPLOY="1"
+GB_HEV_SYNC_ON_DEV_UP="1"
+GB_HEV_SYNC_SOURCE="local"
