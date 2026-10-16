@@ -1,3 +1,7 @@
 .DS_Store
 *.swp
 *~
+
+# Local operator copies if someone tests against this checkout (real apps gitignore these)
+.greenblue
+.gb/

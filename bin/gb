@@ -36,28 +36,34 @@ source "${GREENBLUE_TOOLKIT_ROOT}/cmd/hev.sh"
 
 gb_usage() {
     cat <<EOF
+generic-green-blue-deployment — invoke gb by absolute path from a one-time toolkit install.
+
 Usage: gb [options] <project-root> <command> [args...]
        gb [options] <command> [args...]     when GB_PROJECT_ROOT is set
 
+Each application keeps {project-root}/.greenblue (like .env; not committed). Runtime
+state and HEV wiring live under {project-root}/.gb/ (gitignore in the app repo).
+
 Options:
-  --toolkit PATH       Path to this toolkit (default: install location)
+  --toolkit PATH       Path to this toolkit checkout (default: directory of this gb)
   --hev-config PATH    host-env-vault config.toml (overrides GB_HEV_CONFIG in .greenblue)
   -h, --help           Show this help
 
 Commands:
-  deploy          Start dev stack or run prod blue-green deploy (see GB_MODE in .greenblue)
-  revert          Switch host nginx back to the previous slot (prod only)
-  status          Show active/previous slot from state file
+  deploy          Dev stack or prod blue-green deploy (GB_MODE in .greenblue)
+  revert          Prod: switch nginx to previous slot (from GB_STATE_DIR/previous)
+  status          Show active/previous slot
   config          Print resolved settings (debug)
 
 Environment:
-  GB_PROJECT_ROOT      Default application repo when path is omitted
+  GB_PROJECT_ROOT      Default application root when path is omitted
   GB_INSTALL_GIT_REF   Pin prod deploy to a commit SHA
 
 Examples:
-  gb /var/www/project.example.com deploy
-  gb /var/www/project.example.com revert
-  gb --hev-config /path/to/vault/host-config.toml /var/www/project.example.com deploy
+  /var/gb/generic-green-blue-deployment/bin/gb /var/www/my-app deploy
+  /var/gb/generic-green-blue-deployment/bin/gb /var/www/my-app revert
+  ~/greenblue/bin/gb /path/to/my-app deploy
+  gb --hev-config /etc/host-env-vault/config.toml /var/www/my-app deploy
 EOF
 }
 

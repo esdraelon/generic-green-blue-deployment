@@ -2,8 +2,6 @@
 
 Stack from `main`. One branch + one commit per milestone. Gates: `bash -n` on all `bin/gb`, `lib/*.sh`, `cmd/*.sh`; run `tests/smoke.sh` when present.
 
-Resume from: M4
-
 ## M1 — CLI contract: deploy, revert, contextual `.greenblue`
 
 - [x] Public commands: `deploy`, `revert` (and `config`, `status` for ops). Remove or hide `dev-up`, `install`, `hev-sync`, `hev-render` from primary usage/help (hev may remain as internal phases of deploy).
@@ -30,6 +28,6 @@ Resume from: M4
 
 ## M4 — Docs and operator UX
 
-- [ ] README: `/var/gb/.../bin/gb /var/www/app deploy|revert`; `.greenblue` like `.env`, not committed.
-- [ ] `.gitignore` in toolkit for nothing sensitive; document target `.gb/` gitignore in README for app admins.
-- [ ] Gates + checklist update.
+- [x] README: `/var/gb/.../bin/gb /var/www/app deploy|revert`; `.greenblue` like `.env`, not committed.
+- [x] `.gitignore` in toolkit for nothing sensitive; document target `.gb/` gitignore in README for app admins.
+- [x] Gates + checklist update.
