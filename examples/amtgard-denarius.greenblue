@@ -1,0 +1,39 @@
+# Copy to amtgard-denarius/.greenblue and adjust paths/secrets.
+
+GB_PROJECT_NAME="amtgard-denarius"
+GB_CONTAINER_APP_DIR="/var/www/denarius.amtgard.com"
+GB_COMPOSE_SERVICE="denariusapp"
+
+GB_LEGACY_CONTAINER="amtgard-denarius"
+GB_BLUE_CONTAINER="amtgard-denarius-blue"
+GB_GREEN_CONTAINER="amtgard-denarius-green"
+GB_BLUE_PORT="37180"
+GB_GREEN_PORT="37181"
+
+GB_WEB_COMPOSE_PROJECT="amtgard-denarius"
+GB_SHARED_NETWORK="amtgard-denarius-shared"
+
+GB_STATE_DIR="/var/lib/amtgard-denarius"
+
+GB_NGINX_STRATEGY="site-file"
+GB_NGINX_SITE_NAME="denarius.amtgard.com"
+GB_NGINX_TEMPLATE="host/nginx.%slot%.conf"
+
+GB_DEV_STACKS="sessions web worker"
+GB_DEPLOY_STACKS="sessions web worker"
+
+GB_SESSIONS_COMPOSE_PROJECT="amtgard-denarius-sessions"
+GB_SESSIONS_CONTAINER="amtgard-denarius-sessions"
+GB_WORKER_COMPOSE_PROJECT="amtgard-denarius-worker"
+GB_WORKER_CONTAINER="amtgard-denarius-ledger-worker"
+
+# Tag web slot image for worker — same as install.sh ensure_jwt_worker
+GB_HOOK_AFTER_SLOT_UP="scripts/gb-after-slot-up.sh"
+
+# host-env-vault (local laptop: export HOST_ENV_VAULT_CONFIG to dev-shared/host-config.toml)
+GB_HEV_PROFILES="denarius-web denarius-worker denarius-connect"
+GB_HEV_RENDER_ROOT=""  # defaults to dirname(HOST_ENV_VAULT_CONFIG)/run
+GB_HEV_RENDER_ON_DEV_UP="1"
+GB_HEV_RENDER_ON_DEPLOY="1"
+GB_HEV_SYNC_ON_DEV_UP="1"
+GB_HEV_SYNC_SOURCE="local"
