@@ -1,0 +1,35 @@
+# Sessions + web + worker (typical PHP stack). Copy to your app repo as .greenblue.
+
+GB_PROJECT_NAME="my-app"
+GB_CONTAINER_APP_DIR="/var/www/my-app"
+GB_COMPOSE_SERVICE="web"
+
+GB_LEGACY_CONTAINER="my-app-dev"
+GB_BLUE_CONTAINER="my-app-blue"
+GB_GREEN_CONTAINER="my-app-green"
+GB_BLUE_PORT="8080"
+GB_GREEN_PORT="8081"
+
+GB_WEB_COMPOSE_PROJECT="my-app"
+GB_SHARED_NETWORK="my-app-shared"
+GB_STATE_DIR="/var/lib/my-app"
+
+GB_NGINX_STRATEGY="site-file"
+GB_NGINX_SITE_NAME="my-app.example.com"
+GB_NGINX_TEMPLATE="host/nginx.%slot%.conf"
+
+GB_DEV_STACKS="sessions web worker"
+GB_DEPLOY_STACKS="sessions web worker"
+
+GB_SESSIONS_COMPOSE_PROJECT="my-app-sessions"
+GB_SESSIONS_CONTAINER="my-app-sessions"
+GB_WORKER_COMPOSE_PROJECT="my-app-worker"
+GB_WORKER_CONTAINER="my-app-worker"
+
+GB_HOOK_AFTER_SLOT_UP="scripts/gb-after-slot-up.sh"
+
+GB_HEV_PROFILES="app-web app-worker"
+GB_HEV_RENDER_ON_DEV_UP="1"
+GB_HEV_RENDER_ON_DEPLOY="1"
+GB_HEV_SYNC_ON_DEV_UP="1"
+GB_HEV_SYNC_SOURCE="local"

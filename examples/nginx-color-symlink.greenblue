@@ -1,0 +1,26 @@
+# Host nginx uses sites-available/<color> symlinked to sites-enabled/default.
+
+GB_PROJECT_NAME="my-app"
+GB_CONTAINER_APP_DIR="/var/www/my-app"
+GB_COMPOSE_SERVICE_PATTERN="web-%slot%"
+
+GB_BLUE_CONTAINER="my-app-blue"
+GB_GREEN_CONTAINER="my-app-green"
+GB_BLUE_PORT="9081"
+GB_GREEN_PORT="9080"
+
+GB_WEB_COMPOSE_BASE="docker/compose.prod.yml"
+GB_WEB_COMPOSE_SLOT="docker/compose.%slot%.yml"
+GB_WEB_COMPOSE_DEV="docker/compose.dev.yml"
+
+GB_STATE_DIR="/var/lib/my-app-greenblue"
+
+GB_NGINX_STRATEGY="color-symlink"
+GB_NGINX_SITES_AVAILABLE_DIR="/etc/nginx/sites-available"
+GB_NGINX_SITES_ENABLED_DEFAULT="/etc/nginx/sites-enabled/default"
+
+GB_DEV_STACKS="web"
+GB_DEPLOY_STACKS="web"
+
+GB_APP_INSTALL="none"
+GB_HOOK_INSTALL_APP="scripts/gb-install-app.sh"

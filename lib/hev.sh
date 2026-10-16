@@ -1,36 +1,42 @@
 #!/usr/bin/env bash
-# host-env-vault integration (local dev-shared or production config.toml).
+# host-env-vault integration (sync + render).
+
+gb_hev_effective_config() {
+    if [[ -n "${GB_HEV_CONFIG:-}" ]]; then
+        echo "$GB_HEV_CONFIG"
+    fi
+}
+
+gb_hev_require_config() {
+    local cfg
+    cfg="$(gb_hev_effective_config)"
+    if [[ -z "$cfg" ]]; then
+        gb_die "host-env-vault config required: pass --hev-config PATH or set GB_HEV_CONFIG in .greenblue"
+    fi
+    if [[ ! -f "$cfg" ]]; then
+        gb_die "host-env-vault config not found: ${cfg}"
+    fi
+}
 
 gb_hev_bin() {
-    local bin="${HOST_ENV_VAULT_BIN:-host-env-vault}"
+    local bin="${GB_HEV_BIN:-host-env-vault}"
     if command -v "$bin" >/dev/null 2>&1; then
         echo "$bin"
         return
     fi
 
-    local repo="${GB_HEV_REPO:-${HOST_ENV_VAULT_REPO:-}}"
-    if [[ -z "$repo" && -n "${GREENBLUE_TOOLKIT_ROOT:-}" ]]; then
-        local sibling
-        sibling="$(dirname "$GREENBLUE_TOOLKIT_ROOT")/host-env-vault"
-        if [[ -d "$sibling" ]]; then
-            repo="$sibling"
-        elif [[ -d "${sibling}/Untitled" ]]; then
-            repo="${sibling}/Untitled"
-        fi
-    fi
-
-    if [[ -n "$repo" && -f "${repo}/Cargo.toml" ]]; then
-        if [[ -x "${repo}/target/release/host-env-vault" ]]; then
-            echo "${repo}/target/release/host-env-vault"
+    if [[ -n "${GB_HEV_REPO:-}" && -f "${GB_HEV_REPO}/Cargo.toml" ]]; then
+        if [[ -x "${GB_HEV_REPO}/target/release/host-env-vault" ]]; then
+            echo "${GB_HEV_REPO}/target/release/host-env-vault"
             return
         fi
-        gb_info "Building host-env-vault from ${repo}..."
-        (cd "$repo" && cargo build --release)
-        echo "${repo}/target/release/host-env-vault"
+        gb_info "Building host-env-vault from ${GB_HEV_REPO}..."
+        (cd "$GB_HEV_REPO" && cargo build --release)
+        echo "${GB_HEV_REPO}/target/release/host-env-vault"
         return
     fi
 
-    gb_die "host-env-vault binary not found; install it or set HOST_ENV_VAULT_BIN / GB_HEV_REPO"
+    gb_die "host-env-vault binary not found on PATH; install it or set GB_HEV_BIN / GB_HEV_REPO in .greenblue"
 }
 
 gb_hev_render_root() {
@@ -38,23 +44,21 @@ gb_hev_render_root() {
         echo "$GB_HEV_RENDER_ROOT"
         return
     fi
-    if [[ -n "${HOST_ENV_VAULT_CONFIG:-}" && -f "$HOST_ENV_VAULT_CONFIG" ]]; then
-        local dir
-        dir="$(dirname "$HOST_ENV_VAULT_CONFIG")"
-        echo "${dir}/run"
-        return
-    fi
-    gb_die "set GB_HEV_RENDER_ROOT or HOST_ENV_VAULT_CONFIG for render destinations"
+    gb_hev_require_config
+    local cfg
+    cfg="$(gb_hev_effective_config)"
+    echo "$(dirname "$cfg")/run"
 }
 
 gb_hev_sync() {
-    local bin
+    gb_hev_require_config
+    local bin cfg
     bin="$(gb_hev_bin)"
-    local -a args=(sync)
-
-    if [[ -n "${HOST_ENV_VAULT_CONFIG:-}" && -f "$HOST_ENV_VAULT_CONFIG" ]]; then
-        args+=(--config "$HOST_ENV_VAULT_CONFIG")
-    fi
+    cfg="$(gb_hev_effective_config)"
+    local -a args=(
+        sync
+        --config "$cfg"
+    )
 
     if [[ -n "${GB_HEV_SYNC_SOURCE:-}" ]]; then
         args+=(--source "$GB_HEV_SYNC_SOURCE")
@@ -66,8 +70,10 @@ gb_hev_sync() {
 
 gb_hev_render_profile() {
     local profile="$1"
-    local bin dest parent
+    local bin dest parent cfg
+    gb_hev_require_config
     bin="$(gb_hev_bin)"
+    cfg="$(gb_hev_effective_config)"
     dest="$(gb_hev_render_root)/${profile}/current"
     parent="$(dirname "$dest")"
 
@@ -77,17 +83,8 @@ gb_hev_render_profile() {
     fi
     mkdir -p "$dest"
 
-    local -a args=(
-        render
-        --profile "$profile"
-        --dest "$dest"
-    )
-    if [[ -n "${HOST_ENV_VAULT_CONFIG:-}" && -f "$HOST_ENV_VAULT_CONFIG" ]]; then
-        args+=(--config "$HOST_ENV_VAULT_CONFIG")
-    fi
-
     gb_info "host-env-vault render --profile ${profile} -> ${dest}"
-    "$bin" "${args[@]}"
+    "$bin" render --profile "$profile" --dest "$dest" --config "$cfg"
 }
 
 gb_hev_render_all() {
@@ -100,26 +97,32 @@ gb_hev_render_all() {
     done
 }
 
-gb_hev_maybe_sync() {
+gb_hev_wants_sync() {
     local when="$1"
     case "$when" in
-        dev-up)
-            [[ "$GB_HEV_SYNC_ON_DEV_UP" == "1" ]] && gb_hev_sync
-            ;;
-        deploy)
-            [[ "$GB_HEV_SYNC_ON_DEPLOY" == "1" ]] && gb_hev_sync
-            ;;
+        dev-up) [[ "$GB_HEV_SYNC_ON_DEV_UP" == "1" ]] ;;
+        deploy) [[ "$GB_HEV_SYNC_ON_DEPLOY" == "1" ]] ;;
+        *) return 1 ;;
     esac
+}
+
+gb_hev_wants_render() {
+    local when="$1"
+    case "$when" in
+        dev-up) [[ "$GB_HEV_RENDER_ON_DEV_UP" == "1" ]] ;;
+        deploy) [[ "$GB_HEV_RENDER_ON_DEPLOY" == "1" ]] ;;
+        *) return 1 ;;
+    esac
+}
+
+gb_hev_maybe_sync() {
+    local when="$1"
+    gb_hev_wants_sync "$when" || return 0
+    gb_hev_sync
 }
 
 gb_hev_maybe_render() {
     local when="$1"
-    case "$when" in
-        dev-up)
-            [[ "$GB_HEV_RENDER_ON_DEV_UP" == "1" ]] && gb_hev_render_all
-            ;;
-        deploy)
-            [[ "$GB_HEV_RENDER_ON_DEPLOY" == "1" ]] && gb_hev_render_all
-            ;;
-    esac
+    gb_hev_wants_render "$when" || return 0
+    gb_hev_render_all
 }
