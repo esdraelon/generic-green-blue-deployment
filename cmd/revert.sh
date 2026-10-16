@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-gb_read_previous_slot() {
-    if [[ ! -f "$GB_PREVIOUS_STATE_FILE" ]]; then
-        echo ""
-        return
+# Validates active/previous slot state for revert; prints "active previous" on success.
+gb_resolve_revert_slots() {
+    local active previous
+    active="$(gb_read_active_slot)"
+    previous="$(gb_read_previous_slot)"
+
+    if [[ -z "$active" ]]; then
+        gb_die "no active slot — nothing to revert"
     fi
-    local slot
-    slot="$(tr -d '[:space:]' < "$GB_PREVIOUS_STATE_FILE")"
-    if [[ "$slot" == "blue" || "$slot" == "green" ]]; then
-        echo "$slot"
-        return
+    if [[ -z "$previous" ]]; then
+        gb_die "no previous slot recorded in ${GB_PREVIOUS_STATE_FILE}"
     fi
-    echo ""
+    if [[ "$previous" == "$active" ]]; then
+        gb_die "previous slot matches active (${active}); cannot revert"
+    fi
+
+    echo "${active} ${previous}"
 }
 
 gb_cmd_revert() {
@@ -27,18 +32,7 @@ gb_cmd_revert() {
     fi
 
     local active previous
-    active="$(gb_read_active_slot)"
-    previous="$(gb_read_previous_slot)"
-
-    if [[ -z "$active" ]]; then
-        gb_die "no active slot — nothing to revert"
-    fi
-    if [[ -z "$previous" ]]; then
-        gb_die "no previous slot recorded in ${GB_PREVIOUS_STATE_FILE}"
-    fi
-    if [[ "$previous" == "$active" ]]; then
-        gb_die "previous slot matches active (${active}); cannot revert"
-    fi
+    read -r active previous <<< "$(gb_resolve_revert_slots)"
 
     gb_info "Reverting nginx from ${active} to ${previous} (containers left running)..."
     GB_TARGET_SLOT="$previous"

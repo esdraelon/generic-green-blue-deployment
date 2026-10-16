@@ -49,7 +49,8 @@ gb revert
 | Nginx | `GB_NGINX_STRATEGY`: `site-file` or `color-symlink` |
 | State | `GB_STATE_DIR` → `active` / `previous` slot files |
 | App install | `GB_APP_INSTALL=composer-phinx` or `none`; override with `GB_HOOK_INSTALL_APP` |
-| Hooks | `GB_HOOK_PRE_DEPLOY`, `GB_HOOK_AFTER_SLOT_UP`, `GB_HOOK_AFTER_SLOT_HEALTH`, `GB_HOOK_HEV_AFTER_RENDER`, `GB_HOOK_POST_DEPLOY` (prod deploy), `GB_HOOK_POST_COMMAND` (dev deploy) |
+| Install flags | `GB_INSTALL_REBUILD_SESSIONS`, `GB_INSTALL_RESET_SESSIONS` (Redis `FLUSHDB`), `GB_SESSION_REDIS_DB`, `GB_INSTALL_REBUILD_WORKER` (auto `1` when `GB_INSTALL_GIT_REF` is set on deploy) |
+| Hooks | `GB_HOOK_PRE_DEPLOY`, `GB_HOOK_AFTER_SLOT_UP`, `GB_HOOK_AFTER_SLOT_HEALTH`, `GB_HOOK_HEV_AFTER_RENDER`, `GB_HOOK_ENSURE_SESSIONS` (runs before default session ensure), `GB_HOOK_ENSURE_WORKER` (replaces default worker ensure), `GB_HOOK_POST_DEPLOY` (prod deploy), `GB_HOOK_POST_COMMAND` (dev deploy) |
 | Git | `GB_GIT_BRANCH`, `GB_INSTALL_SKIP_GIT_PULL`, pin with `GB_INSTALL_GIT_REF` |
 | host-env-vault | `GB_HEV_PROFILES`, `GB_HEV_RENDER_ROOT`, `GB_HEV_VAULT_ROOT`, `GB_HEV_CONFIG`, `GB_HEV_SYNC_STRICT`, `GB_HEV_MOUNT_MAP`, sync/render flags |
 | Deploy wiring | `GB_RUNTIME_ENV_FILE` (default `{GB_ROOT}/.gb/runtime.env`, gitignored in the app repo) |
@@ -68,14 +69,25 @@ Hooks receive `GB_ROOT`, `GB_CMD`, `GB_TOOLKIT_ROOT`, and slot variables in the 
 | Command | Purpose |
 | --- | --- |
 | `deploy` | **Dev** (`GB_MODE=dev`): start dev stacks (`GB_DEV_STACKS`). **Prod** (`GB_MODE=prod`): fetch/pull, optional HEV sync/render, blue-green slot deploy, nginx switch. |
-| `revert` | Prod only: point host nginx at the **previous** slot from `GB_STATE_DIR/previous` (containers stay up). |
+| `revert` | Prod only: point host nginx at the **previous** slot from `GB_STATE_DIR/previous` (containers stay up; active/previous state files are swapped). |
 | `status` | Print active/previous slot from `GB_STATE_DIR`. |
 | `config` | Dump resolved settings (debug). |
 
-Pinned prod deploy:
+Pinned prod deploy (also enables worker image rebuild for that deploy):
 
 ```bash
 GB_INSTALL_GIT_REF=9f3c1ab gb --hev-config /path/to/vault/host-config.toml /path/to/my-app deploy
+```
+
+Fast traffic rollback vs redeploying a pinned commit:
+
+```bash
+# Switch nginx back to the last active slot (no git pull, no slot rebuild)
+gb /path/to/my-app revert
+
+# Deploy a specific SHA onto the inactive slot, then cut over (set flags as needed)
+GB_INSTALL_GIT_REF=9f3c1ab gb /path/to/my-app deploy
+# GB_INSTALL_RESET_SESSIONS=1 GB_INSTALL_REBUILD_SESSIONS=1 gb /path/to/my-app deploy
 ```
 
 ## host-env-vault

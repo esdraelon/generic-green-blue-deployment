@@ -2,7 +2,7 @@
 
 Stack from `main`. One branch + one commit per milestone. Gates: `bash -n` on all `bin/gb`, `lib/*.sh`, `cmd/*.sh`; run `tests/smoke.sh` when present.
 
-Resume from: M3
+Resume from: M4
 
 ## M1 — CLI contract: deploy, revert, contextual `.greenblue`
 
@@ -22,11 +22,11 @@ Resume from: M3
 
 ## M3 — Deploy/revert pipeline and install flags
 
-- [ ] `revert`: slot-based using `previous` state file; optional `GB_INSTALL_GIT_REF` via env for SHA revert documented.
-- [ ] `GB_INSTALL_REBUILD_SESSIONS`, `GB_INSTALL_RESET_SESSIONS`, `GB_SESSION_REDIS_DB`, `GB_INSTALL_REBUILD_WORKER`; pin deploy sets rebuild worker.
-- [ ] Replace hardcoded `gb_ensure_worker` behavior with `GB_HOOK_ENSURE_WORKER` defaulting to current behavior.
-- [ ] `GB_HOOK_ENSURE_SESSIONS` optional override.
-- [ ] Gates + checklist update.
+- [x] `revert`: slot-based using `previous` state file; optional `GB_INSTALL_GIT_REF` via env for SHA revert documented.
+- [x] `GB_INSTALL_REBUILD_SESSIONS`, `GB_INSTALL_RESET_SESSIONS`, `GB_SESSION_REDIS_DB`, `GB_INSTALL_REBUILD_WORKER`; pin deploy sets rebuild worker.
+- [x] Replace hardcoded `gb_ensure_worker` behavior with `GB_HOOK_ENSURE_WORKER` defaulting to current behavior.
+- [x] `GB_HOOK_ENSURE_SESSIONS` optional override.
+- [x] Gates + checklist update.
 
 ## M4 — Docs and operator UX
 

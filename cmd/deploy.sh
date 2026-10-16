@@ -58,6 +58,7 @@ gb_cmd_deploy() {
     gb_hook_run "$GB_HOOK_PRE_DEPLOY" deploy
     gb_hev_maybe_sync deploy
     gb_hev_maybe_render deploy
+    gb_apply_pinned_deploy_flags
 
     if [[ "$GB_INSTALL_SKIP_GIT_PULL" != "1" ]]; then
         gb_require_cmd git
